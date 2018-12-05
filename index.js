@@ -49,14 +49,14 @@ function parseJSXsSpec(path,options,callback){
     .map(function(c){
       if(c.openingElement.name.name !== "Z")
         error("Only accepted childs for jsxZ are 'Z'",c.openingElement,path)
-      var selectorAttr = c.openingElement.attributes.filter(function(attr){return attr.name.name == "sel"})[0]
+      var selectorAttr = c.openingElement.attributes.filter(function(attr){return attr.name && attr.name.name == "sel"})[0]
       if(!selectorAttr || selectorAttr.value.type !== 'StringLiteral')
         error("Z 'sel' attribute is mandatory and must be a hardcoded CSS selector",selectorAttr && selectorAttr.value || c.openingElement,path)
 
-      var tagAttr = c.openingElement.attributes.filter(function(attr){return attr.name.name == "tag"})[0]
+      var tagAttr = c.openingElement.attributes.filter(function(attr){return attr.name && attr.name.name == "tag"})[0]
       var tag = tagAttr && tagAttr.value.value
 
-      var otherAttrs = c.openingElement.attributes.filter(function(attr){ return attr.name.name !== 'tag' && attr.name.name !== 'sel'})
+      var otherAttrs = c.openingElement.attributes.filter(function(attr){ return !attr.name || (attr.name.name !== 'tag' && attr.name.name !== 'sel')})
       return {selector: selectorAttr.value.value, tag: tag, attrs: otherAttrs, node: c,selNode: selectorAttr.value}
     })
   var tagAttr = ast.openingElement.attributes.filter(function(attr){return attr.name.name == "tag"})[0]
@@ -248,9 +248,9 @@ function genSwapMap(attrs,nodeIndex){
 
 function alterAttributes(path,transfo,swapMap){
   var attrsPath = path.get("attributes")
-  removeOverwrittenAttrs(attrsPath,transfo.attrs)
+  removeOverwrittenAttrs(attrsPath,transfo.attrs.filter(({name})=> name))
   transfo.attrs.filter(function(attr){
-    return !(attr.value.type == "JSXExpressionContainer" && attr.value.expression.type == "Identifier" && attr.value.expression.name == "undefined")
+    return !attr.value || !(attr.value.type == "JSXExpressionContainer" && attr.value.expression.type == "Identifier" && attr.value.expression.name == "undefined")
   }).map(function(attr){
     path.pushContainer("attributes",attr)
   })
